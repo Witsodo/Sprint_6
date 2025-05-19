@@ -22,6 +22,8 @@ var/
 wheels/
 share/python-wheels/
 *.egg-info/
+allure-results/  # сырые данные тестов
+allure-report/history/  # история запусков (если не нужно)
 .installed.cfg
 *.egg
 MANIFEST
