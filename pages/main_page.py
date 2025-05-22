@@ -1,51 +1,66 @@
-from selenium.webdriver import ActionChains
+import allure
 from locators.main_page_locators import MainPageLocators
 from selenium.webdriver.support import expected_conditions as EC
 from .base_page import BasePage
-import time
+
 
 class MainPage(BasePage):
-    # Получение списка вопросов FAQ
+    @allure.step("Получить количество вопросов FAQ")
+    def get_faq_count(self):
+        return len(self.find_elements(MainPageLocators.FAQ_ITEMS))
+
+    @allure.step("Получить список вопросов FAQ")
     def get_faq_questions(self):
+        return self.find_elements(MainPageLocators.FAQ_HEADERS)
 
-        return self.driver.find_elements(*MainPageLocators.FAQ_HEADERS)
-
-    # Получение списка блоков с ответами FAQ
+    @allure.step("Получить список блоков с ответами FAQ")
     def get_faq_answers(self):
+        return self.find_elements(MainPageLocators.FAQ_ITEMS)
 
-        return self.driver.find_elements(*MainPageLocators.FAQ_ITEMS)
-
-    # Нажатие на вопрос FAQ по индексу
+    @allure.step("Нажать на вопрос FAQ с индексом {index}")
     def click_faq_question(self, index):
+        questions = self.find_elements(MainPageLocators.FAQ_HEADERS)
+        if index >= len(questions):
+            raise IndexError(f"FAQ с индексом {index} не существует")
+        self.scroll_to_element(questions[index])
+        self.click_element(questions[index])
 
-        questions = self.get_faq_questions()
-        questions[index].click()
-
-    # Получение текста ответа FAQ по индексу
+    @allure.step("Получить текст ответа для вопроса с индексом {index}")
     def get_faq_answer_text(self, index):
+        items = self.find_elements(MainPageLocators.FAQ_ITEMS)
+        if index >= len(items):
+            raise IndexError(f"FAQ с индексом {index} не существует")
 
-        answers = self.get_faq_answers()
-        return answers[index].find_element(*MainPageLocators.FAQ_ANSWER).text
+        answer = self.find_child_element(
+            items[index],
+            MainPageLocators.FAQ_ANSWER
+        )
+        self.wait.until(
+            lambda _: answer.is_displayed(),
+            message=f"Ответ для вопроса {index} не отобразился"
+        )
+        return answer.text
 
-    # Клик по верхней кнопке 'Заказать'
+    @allure.step("Нажать на верхнюю кнопку 'Заказать'")
     def click_order_button_top(self):
+        self.click_element(MainPageLocators.ORDER_BUTTON_TOP)
 
-        self.find_element(MainPageLocators.ORDER_BUTTON_TOP).click()
-
-    # Клик по нижней кнопке 'Заказать'
+    @allure.step("Нажать на нижнюю кнопку 'Заказать'")
     def click_order_button_bottom(self):
-
-        button = self.wait.until(EC.element_to_be_clickable(MainPageLocators.ORDER_BUTTON_BOTTOM))
+        button = self.wait.until(
+            EC.element_to_be_clickable(MainPageLocators.ORDER_BUTTON_BOTTOM),
+            message=f"Кнопка 'Заказать' (нижняя) не стала кликабельной"
+        )
         self.driver.execute_script("arguments[0].scrollIntoView(true);", button)
-        time.sleep(0.3)
-        button.click()
+        self.wait.until(
+            EC.visibility_of(button),
+            message=f"Кнопка 'Заказать' (нижняя) не отобразилась после скролла"
+        ).click()
 
-    # Клик по логотипу Самоката
+    @allure.step("Нажать на логотип Самоката")
     def click_scooter_logo(self):
+        self.click_element(MainPageLocators.SCOOTER_LOGO)
 
-        self.find_element(MainPageLocators.SCOOTER_LOGO).click()
-
-    # Клик по логотипу Яндекса
+    @allure.step("Нажать на логотип Яндекса")
     def click_yandex_logo(self):
-
-        self.find_element(MainPageLocators.YANDEX_LOGO).click()
+        self.click_element(MainPageLocators.YANDEX_LOGO)

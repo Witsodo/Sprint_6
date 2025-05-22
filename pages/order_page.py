@@ -1,66 +1,88 @@
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 from locators.order_page_locators import OrderPageLocators
 from selenium.webdriver.common.action_chains import ActionChains
+from .base_page import BasePage
+import allure
 
-class OrderPage:
-    def __init__(self, driver):
-        self.driver = driver
-        self.wait = WebDriverWait(driver, 10)
 
-    # Заполнение информации о пользователе
+class OrderPage(BasePage):  # Наследуемся от BasePage
+    @allure.step("Заполнить информацию о пользователе")
     def fill_user_info(self, user_data):
+        self._fill_name(user_data["name"])
+        self._fill_last_name(user_data["last_name"])
+        self._fill_address(user_data["address"])
+        self._select_metro(user_data["metro"])
+        self._fill_phone(user_data["phone"])
+        self._click_next_button()
 
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.NAME_INPUT)).send_keys(user_data["name"])
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.LAST_NAME_INPUT)).send_keys(user_data["last_name"])
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.ADDRESS_INPUT)).send_keys(user_data["address"])
+    @allure.step("Ввести имя: {name}")
+    def _fill_name(self, name):
+        self.input_text(OrderPageLocators.NAME_INPUT, name)
 
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.METRO_INPUT)).click()
+    @allure.step("Ввести фамилию: {last_name}")
+    def _fill_last_name(self, last_name):
+        self.input_text(OrderPageLocators.LAST_NAME_INPUT, last_name)
+
+    @allure.step("Ввести адрес: {address}")
+    def _fill_address(self, address):
+        self.input_text(OrderPageLocators.ADDRESS_INPUT, address)
+
+    @allure.step("Выбрать станцию метро: {station}")
+    def _select_metro(self, station):
+        self.click_element(OrderPageLocators.METRO_INPUT)
         metro_locator = (
-OrderPageLocators.METRO_STATION[0], OrderPageLocators.METRO_STATION[1].format(user_data["metro"]))
-        self.wait.until(EC.element_to_be_clickable(metro_locator)).click()
-
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.PHONE_INPUT)).send_keys(user_data["phone"])
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.NEXT_BUTTON)).click()
-
-    # Заполнение информации об аренде
-    def fill_rental_info(self, user_data):
-
-        # 1. Заполнение даты
-        date_input = self.wait.until(EC.element_to_be_clickable(OrderPageLocators.DATE_INPUT))
-        date_input.click()
-        date_input.clear()
-        date_input.send_keys(user_data["date"])
-
-        # 2. Закрытие календаря (клик в другое место)
-        header = self.wait.until(EC.element_to_be_clickable(OrderPageLocators.DATE_PICKER_HEADER))
-        header.click()
-
-        # 3. Выбор срока аренды
-        dropdown = self.wait.until(EC.element_to_be_clickable(OrderPageLocators.RENTAL_PERIOD))
-        ActionChains(self.driver).move_to_element(dropdown).click().perform()
-
-        period_locator = (
-            OrderPageLocators.PERIOD_OPTION[0],
-            OrderPageLocators.PERIOD_OPTION[1].format(user_data["period"])
+            OrderPageLocators.METRO_STATION[0],
+            OrderPageLocators.METRO_STATION[1].format(station)
         )
-        self.wait.until(EC.element_to_be_clickable(period_locator)).click()
+        self.click_element(metro_locator)
 
-        # 4. Выбор цвета
-        if user_data["color"] == "black":
-            self.wait.until(EC.element_to_be_clickable(OrderPageLocators.COLOR_BLACK)).click()
-        else:
-            self.wait.until(EC.element_to_be_clickable(OrderPageLocators.COLOR_GREY)).click()
+    @allure.step("Ввести телефон: {phone}")
+    def _fill_phone(self, phone):
+        self.input_text(OrderPageLocators.PHONE_INPUT, phone)
 
-        # 5. Заполнение комментария
+    @allure.step("Нажать кнопку 'Далее'")
+    def _click_next_button(self):
+        self.click_element(OrderPageLocators.NEXT_BUTTON)
+
+    @allure.step("Заполнить информацию об аренде")
+    def fill_rental_info(self, user_data):
+        self._set_delivery_date(user_data["date"])
+        self._select_rental_period(user_data["period"])
+        self._select_scooter_color(user_data["color"])
         if user_data.get("comment"):
-            self.wait.until(EC.element_to_be_clickable(OrderPageLocators.COMMENT_INPUT)).send_keys(user_data["comment"])
+            self._add_comment(user_data["comment"])
+        self._confirm_order()
 
-        # 6. Подтверждение заказа
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.ORDER_BUTTON)).click()
-        self.wait.until(EC.element_to_be_clickable(OrderPageLocators.CONFIRM_BUTTON)).click()
+    @allure.step("Установить дату доставки: {date}")
+    def _set_delivery_date(self, date):
+        date_input = self.wait_for_clickable(OrderPageLocators.DATE_INPUT)
+        self.click_element(date_input)
+        date_input.clear()
+        date_input.send_keys(date)
+        self.click_element(OrderPageLocators.DATE_PICKER_HEADER)  # Клик вне календаря
 
-    # Проверка подтверждения заказа (только проверка видимости элемента)
+    @allure.step("Выбрать срок аренды: {period}")
+    def _select_rental_period(self, period):
+        self.click_element(OrderPageLocators.RENTAL_PERIOD)
+        period_locator = (OrderPageLocators.PERIOD_OPTION[0],
+                         OrderPageLocators.PERIOD_OPTION[1].format(period))
+        self.click_element(period_locator)
+
+    @allure.step("Выбрать цвет самоката: {color}")
+    def _select_scooter_color(self, color):
+        if color == "black":
+            self.click_element(OrderPageLocators.COLOR_BLACK)
+        else:
+            self.click_element(OrderPageLocators.COLOR_GREY)
+
+    @allure.step("Добавить комментарий: {comment}")
+    def _add_comment(self, comment):
+        self.input_text(OrderPageLocators.COMMENT_INPUT, comment)
+
+    @allure.step("Подтвердить заказ")
+    def _confirm_order(self):
+        self.click_element(OrderPageLocators.ORDER_BUTTON)
+        self.click_element(OrderPageLocators.CONFIRM_BUTTON)
+
+    @allure.step("Проверить подтверждение заказа")
     def is_order_confirmed(self):
-
-        return self.wait.until(EC.visibility_of_element_located(OrderPageLocators.SUCCESS_MODAL)).is_displayed()
+        return self.is_element_visible(OrderPageLocators.SUCCESS_MODAL)
