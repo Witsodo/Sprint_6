@@ -31,14 +31,16 @@ class MainPage(BasePage):
         if index >= len(items):
             raise IndexError(f"FAQ с индексом {index} не существует")
 
-        answer = self.find_child_element(
-            items[index],
-            MainPageLocators.FAQ_ANSWER
-        )
-        self.wait.until(
-            lambda _: answer.is_displayed(),
-            message=f"Ответ для вопроса {index} не отобразился"
-        )
+        # Получаем родительский элемент вопроса
+        question_item = items[index]
+
+        # Находим ответ внутри вопроса (используя локатор)
+        answer = question_item.find_element(*MainPageLocators.FAQ_ANSWER)
+
+        # Проверяем видимость через базовый класс
+        if not self.is_element_displayed(answer):
+            raise ValueError(f"Ответ для вопроса {index} не отобразился")
+
         return answer.text
 
     @allure.step("Нажать на верхнюю кнопку 'Заказать'")
@@ -47,15 +49,8 @@ class MainPage(BasePage):
 
     @allure.step("Нажать на нижнюю кнопку 'Заказать'")
     def click_order_button_bottom(self):
-        button = self.wait.until(
-            EC.element_to_be_clickable(MainPageLocators.ORDER_BUTTON_BOTTOM),
-            message=f"Кнопка 'Заказать' (нижняя) не стала кликабельной"
-        )
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", button)
-        self.wait.until(
-            EC.visibility_of(button),
-            message=f"Кнопка 'Заказать' (нижняя) не отобразилась после скролла"
-        ).click()
+        self.close_cookies_if_present()  # Закрываем куки если есть
+        self.safe_scroll_and_click(MainPageLocators.ORDER_BUTTON_BOTTOM)
 
     @allure.step("Нажать на логотип Самоката")
     def click_scooter_logo(self):

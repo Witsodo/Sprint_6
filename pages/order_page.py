@@ -54,10 +54,8 @@ class OrderPage(BasePage):  # Наследуемся от BasePage
 
     @allure.step("Установить дату доставки: {date}")
     def _set_delivery_date(self, date):
-        date_input = self.wait_for_clickable(OrderPageLocators.DATE_INPUT)
-        self.click_element(date_input)
-        date_input.clear()
-        date_input.send_keys(date)
+        self.click_element(OrderPageLocators.DATE_INPUT)
+        self.input_text(OrderPageLocators.DATE_INPUT, date)  # метод базового класса
         self.click_element(OrderPageLocators.DATE_PICKER_HEADER)  # Клик вне календаря
 
     @allure.step("Выбрать срок аренды: {period}")
